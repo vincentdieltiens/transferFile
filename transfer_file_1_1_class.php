@@ -294,6 +294,14 @@ class TransferFile_1_1
 		return $this->languages[$index]['to'];
 	}
 	
+	public function getToS() {
+		$tos = array();
+		foreach($this->languages as $combination) {
+			$tos[] = $combination['to'];
+		}
+		return $tos;
+	}
+	
 	public function addCombinationArray($combination)
 	{
 		$this->languages[] = $combination;
@@ -321,6 +329,27 @@ class TransferFile_1_1
 	public function getTargets()
 	{
 		return $this->targets;
+	}
+	
+	public function getTargetsGroupBy()
+	{
+		$targets = array();
+		
+		foreach($this->getLanguages() as $combination) {
+			$targets[$combination['to']] = array();
+		}
+		
+		foreach($this->targets as $target)
+		{
+			if( preg_match("#_([a-zA-Z]{3})\.(.*)$#", $target['name'], $matches) ) {
+				
+				$iso = $matches[1];
+				
+				$targets[$iso][] = $target;
+			}
+		}
+		
+		return $targets;
 	}
 	
 	public function hasTargets()
@@ -545,16 +574,21 @@ class TransferFile_1_1
 	
 	public function fileToXML($dom, $file)
 	{
-		if( $file['md5'] != null && $file['md5'] != '' )
-		{
-			$fileNode = $dom->createElement('file');
+		$fileNode = $dom->createElement('file');
 			
-			$fileNode->appendChild($dom->createElement('name', $file['name']));
-			$fileNode->appendChild($dom->createElement('md5', $file['md5']));
-		}
-		else
+		$fileNode->appendChild($dom->createElement('name', $file['name']));
+			
+		if( isset($file['md5']) && $file['md5'] != null && $file['md5'] != '' )
 		{
-			$fileNode = $dom->createElement('file', $file['name']);
+			$fileNode->setAttribute('md5', $file['md5']);
+		}
+		
+		if( isset($file['size']) && $file['size'] != null && $file['size'] != '' ) {
+			$fileNode->setAttribute('size', $file['size']);
+		}
+		
+		if( isset($file['id']) && $file['id'] != null && $file['id'] != '' ) {
+			$fileNode->setAttribute('id', $file['id']);
 		}
 		
 		return $fileNode;
@@ -755,18 +789,21 @@ class TransferFile_1_1
 	
 	public function parseXMLFile($file)
 	{
+		
 		if( $file->getElementsByTagName('name')->item(0) && $file->getElementsByTagName('md5')->item(0) )
 		{
 			return array(
 				'name' => $file->getElementsByTagName('name')->item(0)->nodeValue,
-				'md5' => $file->getElementsByTagName('md5')->item(0)->nodeValue
+				'md5' => $file->getElementsByTagName('md5')->item(0)->nodeValue,
+				'size' => ($file->getElementsByTagName('size')->item(0)) ? $file->getElementsByTagName('size')->item(0)->nodeValue : ''
 			);
 		}
 		else
 		{
 			return array(
 				'name' => $file->nodeValue,
-				'md5' => null
+				'md5' => ($file->hasAttribute('md5')) ? $file->getAttribute('md5')  : null,
+				'size' => ($file->hasAttribute('size')) ? $file->getAttribute('size') : null
 			);
 		}
 	}

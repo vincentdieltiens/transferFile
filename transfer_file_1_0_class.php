@@ -298,6 +298,27 @@ class TransferFile_1_0
 		return $this->targets;
 	}
 	
+	public function getTargetsGroupBy()
+	{
+		$targets = array();
+		
+		foreach($this->getLanguages() as $combination) {
+			$targets[$combination['to']] = array();
+		}
+		
+		foreach($this->targets as $target)
+		{
+			if( preg_match("#_([a-zA-Z]{3})\.(.*)$#", $target['name'], $matches) ) {
+				
+				$iso = $matches[1];
+				
+				$targets[$iso][] = $target;
+			}
+		}
+		
+		return $targets;
+	}
+	
 	public function hasTargets()
 	{
 		return count($this->targets) > 0;
